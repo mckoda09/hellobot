@@ -29,14 +29,14 @@ const forbidden = async (c: Context) => {
 };
 
 await bot.api.setMyCommands([
-  { command: "start", description: "Проверить доступ" },
-  { command: "add", description: "Добавить канал" },
-  { command: "remove", description: "Удалить канал" },
-  { command: "list", description: "Список каналов" },
-  { command: "approve", description: "Принять заявки" },
-  { command: "hi", description: "Установить привет" },
-  { command: "bite", description: "Установить байт" },
-  { command: "cast", description: "Отправить рассылку" },
+  { command: "start", description: "Проверить доступ 🔑" },
+  { command: "add", description: "Добавить канал ➕" },
+  { command: "remove", description: "Удалить канал 🚫" },
+  { command: "list", description: "Список каналов 📄" },
+  { command: "approve", description: "Принять заявки ✅" },
+  { command: "hi", description: "Установить привет 👋" },
+  { command: "bite", description: "Установить байт 🤭" },
+  { command: "cast", description: "Отправить рассылку 📢" },
 ]);
 
 bot.chatType("private").command("cancel", async (c) => {
@@ -265,7 +265,7 @@ bot.chatType("private").on("msg:text", async (c) => {
       let error = 0;
       for (const user of users) {
         try {
-          await c.copyMessage(user);
+          await c.copyMessage(user, {reply_markup: c.msg.reply_markup});
           success++;
         } catch {
           error++;
