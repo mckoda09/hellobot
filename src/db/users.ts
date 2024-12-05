@@ -11,8 +11,5 @@ export const addUser = async (chatId: number, userId: number) =>
 export const listUsers = async (chatId: number) =>
   await Array.fromAsync(
     kv.list<boolean>({ prefix: ["user", chatId] }),
-    (e) => ({
-      chatId,
-      userId: Number(e.key[2]),
-    }),
+    (e) => Number(e.key[2]),
   );

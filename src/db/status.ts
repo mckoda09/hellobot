@@ -7,7 +7,9 @@ type Status =
   | "selecthi"
   | "hi"
   | "selectbite"
-  | "bite";
+  | "bite"
+  | "selectcast"
+  | "cast";
 
 const statusKey = (id: number) => ["status", id];
 

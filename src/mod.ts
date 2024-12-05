@@ -17,7 +17,7 @@ import {
   setHiMessage,
 } from "./db/messages.ts";
 import { InlineKeyboardMarkup } from "https://deno.land/x/grammy@v1.32.0/types.ts";
-import { addUser } from "./db/users.ts";
+import { addUser, listUsers } from "./db/users.ts";
 
 export const logsId = Number("-100" + Deno.env.get("LOGS_ID"));
 
@@ -34,11 +34,16 @@ await bot.api.setMyCommands([
   { command: "remove", description: "Удалить канал" },
   { command: "list", description: "Список каналов" },
   { command: "approve", description: "Принять заявки" },
+  { command: "hi", description: "Установить привет" },
+  { command: "bite", description: "Установить байт" },
+  { command: "cast", description: "Отправить рассылку" },
 ]);
 
 bot.chatType("private").command("cancel", async (c) => {
   await clearStatus(c.from.id);
-  await c.reply("Текущее действие отменено.");
+  await c.reply("Текущее действие отменено.", {
+    reply_markup: { remove_keyboard: true },
+  });
 });
 
 bot.chatType("private").command("start", async (c) => {
@@ -130,6 +135,22 @@ bot.chatType("private").command("bite", async (c) => {
   });
 });
 
+bot.chatType("private").command("cast", async (c) => {
+  if (!await isAdmin(c.from.id)) return await forbidden(c);
+
+  await setStatus(c.from.id, "selectcast");
+  const reply_markup = new Keyboard()
+    .oneTime()
+    .requestChat("Выбрать канал", 0, {
+      chat_is_channel: true,
+      request_title: true,
+    })
+    .resized();
+  await c.reply("Выбери канал для рассылки 👇", {
+    reply_markup,
+  });
+});
+
 bot.chatType("private").on("msg:chat_shared", async (c) => {
   switch (await getStatus(c.from.id)) {
     case "add": {
@@ -140,7 +161,9 @@ bot.chatType("private").on("msg:chat_shared", async (c) => {
         c.from.id,
         c.msg.chat_shared.title || "???",
       );
-      await c.reply("Канал добавлен.");
+      await c.reply("Канал добавлен.", {
+        reply_markup: { remove_keyboard: true },
+      });
       break;
     }
     case "remove": {
@@ -150,13 +173,17 @@ bot.chatType("private").on("msg:chat_shared", async (c) => {
         c.msg.chat_shared.chat_id,
         c.from.id,
       );
-      await c.reply("Канал удален.");
+      await c.reply("Канал удален.", {
+        reply_markup: { remove_keyboard: true },
+      });
       break;
     }
     case "approve": {
       if (!await isAdmin(c.from.id)) return await forbidden(c);
       await clearStatus(c.from.id);
-      await c.reply("Принимаю заявки...");
+      await c.reply("Принимаю заявки...", {
+        reply_markup: { remove_keyboard: true },
+      });
       const requests = await listRequests(c.msg.chat_shared.chat_id);
       let success = 0;
       let error = 0;
@@ -176,14 +203,27 @@ bot.chatType("private").on("msg:chat_shared", async (c) => {
       if (!await isAdmin(c.from.id)) return await forbidden(c);
       await setSelected(c.from.id, c.msg.chat_shared.chat_id);
       await setStatus(c.from.id, "hi");
-      await c.reply("Отправь сообщение для приветствия:");
+      await c.reply("Отправь сообщение для приветствия:", {
+        reply_markup: { remove_keyboard: true },
+      });
       break;
     }
     case "selectbite": {
       if (!await isAdmin(c.from.id)) return await forbidden(c);
       await setSelected(c.from.id, c.msg.chat_shared.chat_id);
       await setStatus(c.from.id, "bite");
-      await c.reply("Отправь сообщение для байта:");
+      await c.reply("Отправь сообщение для байта:", {
+        reply_markup: { remove_keyboard: true },
+      });
+      break;
+    }
+    case "selectcast": {
+      if (!await isAdmin(c.from.id)) return await forbidden(c);
+      await setSelected(c.from.id, c.msg.chat_shared.chat_id);
+      await setStatus(c.from.id, "cast");
+      await c.reply("Отправь сообщение для рассылки:", {
+        reply_markup: { remove_keyboard: true },
+      });
       break;
     }
   }
@@ -214,13 +254,35 @@ bot.chatType("private").on("msg:text", async (c) => {
       await c.reply("Байт-сообщение установлено.");
       break;
     }
+    case "cast": {
+      if (!await isAdmin(c.from.id)) return await forbidden(c);
+      const selected = await getSelected(c.from.id);
+      await clearStatus(c.from.id);
+      await clearSelected(c.from.id);
+      await c.reply("Отправляю рассылку...");
+      const users = await listUsers(selected || 0);
+      let success = 0;
+      let error = 0;
+      for (const user of users) {
+        try {
+          await c.copyMessage(user);
+          success++;
+        } catch {
+          error++;
+        }
+      }
+      await c.reply(
+        `Рассылка отправлена! ${success} успешно, ${error} провалено.`,
+      );
+      break;
+    }
   }
 });
 
 bot.on("chat_join_request", async (c) => {
   if (await isChannel(c.chatJoinRequest.chat.id)) {
     await addRequest(c.chatJoinRequest.chat.id, c.chatJoinRequest.from.id);
-    await addUser(c.chatJoinRequest.chat.id, c.chatJoinRequest.from.id)
+    await addUser(c.chatJoinRequest.chat.id, c.chatJoinRequest.from.id);
     const hiMessage = await getHiMessage(c.chatJoinRequest.chat.id);
     const biteMessage = await getBiteMessage(c.chatJoinRequest.chat.id);
     if (hiMessage) {
