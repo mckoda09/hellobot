@@ -229,7 +229,7 @@ bot.chatType("private").on("msg:chat_shared", async (c) => {
   }
 });
 
-bot.chatType("private").on("msg:text", async (c) => {
+bot.chatType("private").on("msg", async (c) => {
   switch (await getStatus(c.from.id)) {
     case "hi": {
       if (!await isAdmin(c.from.id)) return await forbidden(c);
