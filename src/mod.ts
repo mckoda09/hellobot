@@ -265,7 +265,7 @@ bot.chatType("private").on("msg", async (c) => {
       let error = 0;
       for (const user of users) {
         try {
-          await c.copyMessage(user, {reply_markup: c.msg.reply_markup});
+          await c.copyMessage(user, { reply_markup: c.msg.reply_markup });
           success++;
         } catch {
           error++;
@@ -299,7 +299,7 @@ bot.on("chat_join_request", async (c) => {
         chatId: biteMessage!.chatId,
         msgId: biteMessage!.msgId,
         reply_markup: biteMessage?.reply_markup,
-      }, { delay: 5000 });
+      }, { delay: 15000 });
     }
   }
 });
