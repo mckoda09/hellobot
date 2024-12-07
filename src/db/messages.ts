@@ -35,7 +35,7 @@ export const getHiMessage = async (id: number) => {
   };
 };
 
-const biteMessageKey = (id: number) => ["hiMessage", id];
+const biteMessageKey = (id: number) => ["biteMessage", id];
 
 interface hiMessage {
   chatId: number;
